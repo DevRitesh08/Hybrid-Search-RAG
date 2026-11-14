@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.13.1"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Lint with ruff
+        run: uv run ruff check src/ tests/ scripts/ app/
+
+      - name: Check formatting with ruff
+        run: uv run ruff format --check src/ tests/ scripts/ app/
+
+      - name: Type check with mypy
+        run: uv run mypy src/hybrid_rag --ignore-missing-imports
+
+      - name: Run unit tests
+        run: uv run pytest tests/unit/ -v -m "not integration" --tb=short
+        env:
+          GEMINI_API_KEY: "test-ci-key"
